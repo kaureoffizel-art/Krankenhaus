@@ -2,88 +2,35 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Privatklinik Level 8</title>
-
+<title>Prof. Dr. Kenan Privatklinik – Kalender Popup</title>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
 <style>
-body{
-font-family:Segoe UI;
-margin:0;
-background:#f4f6f9;
-transition:0.3s;
-}
-
-.dark{
-background:#1e272e;
-color:white;
-}
-
-header{
-background:#2c3e50;
-color:white;
-padding:18px;
-text-align:center;
-font-size:20px;
-}
-
-.container{
-max-width:1200px;
-margin:auto;
-padding:20px;
-}
-
-.card{
-background:white;
-padding:20px;
-margin-bottom:20px;
-border-radius:10px;
-box-shadow:0 6px 20px rgba(0,0,0,0.15);
-}
-
-.dark .card{
-background:#2f3640;
-}
-
-input,textarea,select{
-width:100%;
-padding:8px;
-margin-bottom:10px;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
-button{
-padding:8px 14px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-background:#3498db;
-color:white;
-margin-right:5px;
-}
-
+body{font-family:'Segoe UI',sans-serif;margin:0;background:#f0f4f8;transition:.3s;}
+.dark{background:#1e1e2f;color:white;}
+header{background:#1e3d59;color:white;padding:20px;text-align:center;font-size:24px;letter-spacing:1px;}
+.container{max-width:1200px;margin:auto;padding:20px;}
+.card{background:white;padding:20px;margin-bottom:20px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.15);}
+.dark .card{background:#2f3640;}
+input,textarea,select{width:100%;padding:10px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc;}
+button{padding:10px 16px;border:none;border-radius:6px;cursor:pointer;background:#3498db;color:white;margin-right:5px;}
+button:hover{opacity:.9;}
 .danger{background:#e74c3c;}
 .hidden{display:none;}
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-th,td{
-border:1px solid #ddd;
-padding:8px;
-}
-
-th{
-background:#34495e;
-color:white;
-}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #ddd;padding:10px;text-align:left;}
+th{background:#1e3d59;color:white;}
+.status-open{color:red;font-weight:bold;}
+.status-done{color:green;font-weight:bold;}
+#calendar{max-width:1000px;margin:auto;}
+#popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.3);display:none;z-index:1000;max-width:400px;}
+#popup.dark{background:#2f3640;color:white;}
+#overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;z-index:900;}
 </style>
 </head>
 <body>
 
 <header>
-🏥 Privatklinik – Level 8 Command Center
+🏥 Prof. Dr. Kenan Privatklinik – Kalender Popup
 <button onclick="toggleMode()">Dark Mode</button>
 </header>
 
@@ -105,25 +52,31 @@ color:white;
 <div class="card">
 <h3>Statistik</h3>
 <div id="stats"></div>
+<canvas id="statsChart" width="400" height="100"></canvas>
 </div>
 
 <div class="card">
-<h3>Neuer Patient</h3>
+<h3>Neuer Patient (Empfang)</h3>
 <input id="pname" placeholder="Name">
 <input id="palter" type="number" placeholder="Alter">
-<input id="pdiagnose" placeholder="Diagnose">
-<textarea id="pbehandlung" placeholder="Behandlung"></textarea>
+<input id="ptermin" type="datetime-local" placeholder="Termin">
+<textarea id="psymptome" placeholder="Symptome"></textarea>
+<input id="pdiagnose" placeholder="Diagnose (Arzt)">
+<textarea id="pbehandlung" placeholder="Behandlung (Arzt)"></textarea>
+<select id="pstatus">
+<option value="offen">Status: offen</option>
+<option value="erledigt">Status: erledigt</option>
+</select>
 <button onclick="savePatient()">Speichern</button>
 </div>
 
 <div class="card">
 <h3>Patienten</h3>
+<input id="search" placeholder="Suche..." oninput="loadPatients()">
 <table>
 <thead>
 <tr>
-<th>Name</th>
-<th>Diagnose</th>
-<th>Aktion</th>
+<th>Name</th><th>Termin</th><th>Symptome</th><th>Diagnose</th><th>Behandlung</th><th>Status</th><th>Aktion</th>
 </tr>
 </thead>
 <tbody id="patientTable"></tbody>
@@ -135,8 +88,8 @@ color:white;
 <input id="newUser" placeholder="Benutzername">
 <input id="newPass" placeholder="Passwort">
 <select id="newRole">
-<option value="doctor">Doctor</option>
-<option value="assistant">Assistant</option>
+<option value="doctor">Arzt</option>
+<option value="assistant">Assistent</option>
 <option value="admin">Admin</option>
 </select>
 <button onclick="createUser()">Benutzer erstellen</button>
@@ -147,149 +100,96 @@ color:white;
 <ul id="logList"></ul>
 </div>
 
-</div>
+<div class="card">
+<h3>Kalender (Drag & Drop Termine)</h3>
+<div id="calendar"></div>
 </div>
 
+</div>
+
+<div id="overlay"></div>
+<div id="popup">
+<h3>Patient bearbeiten</h3>
+<input id="ppname" placeholder="Name">
+<input id="ppalter" type="number" placeholder="Alter">
+<input id="pptermin" type="datetime-local" placeholder="Termin">
+<textarea id="ppsymptome" placeholder="Symptome"></textarea>
+<input id="ppdiagnose" placeholder="Diagnose">
+<textarea id="ppbehandlung" placeholder="Behandlung"></textarea>
+<select id="ppstatus">
+<option value="offen">Status: offen</option>
+<option value="erledigt">Status: erledigt</option>
+</select>
+<button onclick="saveEdit()">Speichern</button>
+<button onclick="pdfEdit()">PDF</button>
+<button onclick="closePopup()" class="danger">Abbrechen</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Globals
+let currentUser=null; let role=null; let editId=null;
 
-let currentUser=null;
-let role=null;
+// Hash
+async function hash(text){const buffer=new TextEncoder().encode(text); const hashBuffer=await crypto.subtle.digest('SHA-256',buffer); return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');}
 
-async function hash(text){
-const buffer = new TextEncoder().encode(text);
-const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-return Array.from(new Uint8Array(hashBuffer))
-.map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-async function initUsers(){
-if(!localStorage.getItem("users")){
-let adminPass=await hash("admin");
-let users=[{username:"Admin",password:adminPass,role:"admin"}];
-localStorage.setItem("users",JSON.stringify(users));
-}
-}
-
+// Users
+async function initUsers(){if(!localStorage.getItem("users")){let adminPass=await hash("admin");let users=[{username:"Admin",password:adminPass,role:"admin"}];localStorage.setItem("users",JSON.stringify(users));}}
 initUsers();
 
-async function login(){
-let u=username.value;
-let p=await hash(password.value);
-let users=JSON.parse(localStorage.getItem("users"));
-let user=users.find(x=>x.username===u && x.password===p);
+// Login
+async function login(){let u=username.value; let p=await hash(password.value); let users=JSON.parse(localStorage.getItem("users")); let user=users.find(x=>x.username===u && x.password===p); if(user){currentUser=u; role=user.role; sessionStorage.setItem("user",u); sessionStorage.setItem("role",role); showMain();} else alert("Login falsch");}
 
-if(user){
-currentUser=u;
-role=user.role;
-sessionStorage.setItem("user",u);
-sessionStorage.setItem("role",role);
-showMain();
-}else alert("Login falsch");
-}
+// Dashboard
+function showMain(){loginBox.classList.add("hidden"); main.classList.remove("hidden"); if(role==="admin") adminPanel.classList.remove("hidden"); loadPatients(); updateStats(); loadLog(); renderCalendar();}
 
-function showMain(){
-loginBox.classList.add("hidden");
-main.classList.remove("hidden");
-if(role==="admin") adminPanel.classList.remove("hidden");
-loadPatients();
-updateStats();
-loadLog();
-}
+// Logout
+function logout(){sessionStorage.clear(); location.reload();}
 
-function logout(){
-sessionStorage.clear();
-location.reload();
-}
+// Patienten
+function savePatient(){let data=JSON.parse(localStorage.getItem("patients"))||[]; let patient={id:Date.now(),name:pname.value,alter:palter.value,termin:ptermin.value,symptome:psymptome.value,diagnose:pdiagnose.value,behandlung:pbehandlung.value,status:pstatus.value,erstelltVon:currentUser}; data.push(patient); localStorage.setItem("patients",JSON.stringify(data)); log("Patient erstellt: "+patient.name); loadPatients(); updateStats(); renderCalendar();}
 
-function savePatient(){
-let data=JSON.parse(localStorage.getItem("patients"))||[];
-let patient={
-id:Date.now(),
-name:pname.value,
-alter:palter.value,
-diagnose:pdiagnose.value,
-behandlung:pbehandlung.value,
-erstelltVon:currentUser
-};
-data.push(patient);
-localStorage.setItem("patients",JSON.stringify(data));
-log("Patient erstellt: "+patient.name);
-loadPatients();
-updateStats();
-}
+function loadPatients(){let data=JSON.parse(localStorage.getItem("patients"))||[]; let s=search.value.toLowerCase(); patientTable.innerHTML=""; data.filter(p=>p.name.toLowerCase().includes(s)).forEach(p=>{let row=document.createElement("tr"); row.innerHTML=`<td>${p.name}</td><td>${p.termin}</td><td>${p.symptome}</td><td>${p.diagnose}</td><td>${p.behandlung}</td><td class="${p.status==='offen'?'status-open':'status-done'}">${p.status}</td><td><button onclick="openPopup(${p.id})">Bearbeiten</button><button onclick="pdfPatient(${p.id})">PDF</button>${role==="admin"?`<button class="danger" onclick="deletePatient(${p.id})">Löschen</button>`:""}</td>`; patientTable.appendChild(row);});}
 
-function loadPatients(){
-let data=JSON.parse(localStorage.getItem("patients"))||[];
-patientTable.innerHTML="";
-data.forEach(p=>{
-let row=document.createElement("tr");
-row.innerHTML=`
-<td>${p.name}</td>
-<td>${p.diagnose}</td>
-<td>
-<button onclick="pdfPatient(${p.id})">PDF</button>
-${role==="admin"?`<button class="danger" onclick="deletePatient(${p.id})">Löschen</button>`:""}
-</td>`;
-patientTable.appendChild(row);
-});
-}
+// Popup
+function openPopup(id){let data=JSON.parse(localStorage.getItem("patients")); let p=data.find(x=>x.id==id); editId=id; ppname.value=p.name; ppalter.value=p.alter; pptermin.value=p.termin; ppsymptome.value=p.symptome; ppdiagnose.value=p.diagnose; ppbehandlung.value=p.behandlung; ppstatus.value=p.status; overlay.style.display="block"; popup.style.display="block"; if(document.body.classList.contains("dark")) popup.classList.add("dark");}
+function closePopup(){overlay.style.display="none"; popup.style.display="none"; renderCalendar(); loadPatients(); updateStats();}
 
-function deletePatient(id){
-let data=JSON.parse(localStorage.getItem("patients"));
-let p=data.find(x=>x.id===id);
-data=data.filter(x=>x.id!==id);
-localStorage.setItem("patients",JSON.stringify(data));
-log("Patient gelöscht: "+p.name);
-loadPatients();
-updateStats();
-}
+// Save Edit
+function saveEdit(){let data=JSON.parse(localStorage.getItem("patients")); let p=data.find(x=>x.id==editId); p.name=ppname.value; p.alter=ppalter.value; p.termin=pptermin.value; p.symptome=ppsymptome.value; p.diagnose=ppdiagnose.value; p.behandlung=ppbehandlung.value; p.status=ppstatus.value; localStorage.setItem("patients",JSON.stringify(data)); log("Patient bearbeitet: "+p.name); closePopup();}
 
-function updateStats(){
-let data=JSON.parse(localStorage.getItem("patients"))||[];
-stats.innerHTML="Gesamt Patienten: "+data.length;
-}
+// PDF Edit
+function pdfEdit(){pdfPatient(editId);}
 
-function log(text){
-let logs=JSON.parse(localStorage.getItem("logs"))||[];
-logs.push(new Date().toLocaleString()+" - "+currentUser+" - "+text);
-localStorage.setItem("logs",JSON.stringify(logs));
-loadLog();
-}
+// Löschen
+function deletePatient(id){let data=JSON.parse(localStorage.getItem("patients")); let p=data.find(x=>x.id===id); data=data.filter(x=>x.id!==id); localStorage.setItem("patients",JSON.stringify(data)); log("Patient gelöscht: "+p.name); loadPatients(); updateStats(); renderCalendar();}
 
-function loadLog(){
-let logs=JSON.parse(localStorage.getItem("logs"))||[];
-logList.innerHTML="";
-logs.slice().reverse().forEach(l=>{
-let li=document.createElement("li");
-li.textContent=l;
-logList.appendChild(li);
-});
-}
+// Statistik
+function updateStats(){let data=JSON.parse(localStorage.getItem("patients"))||[]; stats.innerHTML="Gesamt Patienten: "+data.length; let ctx=document.getElementById('statsChart').getContext('2d'); let offen=data.filter(p=>p.status==='offen').length; let done=data.filter(p=>p.status==='erledigt').length; if(window.chart) window.chart.destroy(); window.chart=new Chart(ctx,{type:'bar',data:{labels:['Offen','Erledigt'],datasets:[{label:'Patienten Status',data:[offen,done],backgroundColor:['#e74c3c','#2ecc71']}]},options:{responsive:true,plugins:{legend:{display:false}}}});}
 
-async function createUser(){
-let users=JSON.parse(localStorage.getItem("users"));
-let hashed=await hash(newPass.value);
-users.push({username:newUser.value,password:hashed,role:newRole.value});
-localStorage.setItem("users",JSON.stringify(users));
-alert("Benutzer erstellt");
-}
+// Audit Log
+function log(text){let logs=JSON.parse(localStorage.getItem("logs"))||[]; logs.push(new Date().toLocaleString()+" - "+currentUser+" - "+text); localStorage.setItem("logs",JSON.stringify(logs)); loadLog();}
+function loadLog(){let logs=JSON.parse(localStorage.getItem("logs"))||[]; logList.innerHTML=""; logs.slice().reverse().forEach(l=>{let li=document.createElement("li"); li.textContent=l; logList.appendChild(li);});}
 
-function toggleMode(){
-document.body.classList.toggle("dark");
-}
+// Admin
+async function createUser(){let users=JSON.parse(localStorage.getItem("users")); let hashed=await hash(newPass.value); users.push({username:newUser.value,password:hashed,role:newRole.value}); localStorage.setItem("users",JSON.stringify(users)); alert("Benutzer erstellt");}
 
-function pdfPatient(id){
-let data=JSON.parse(localStorage.getItem("patients"));
-let p=data.find(x=>x.id===id);
-let w=window.open();
-w.document.write("<h2>Patientenakte</h2>");
-w.document.write("Name: "+p.name+"<br>");
-w.document.write("Alter: "+p.alter+"<br>");
-w.document.write("Diagnose: "+p.diagnose+"<br>");
-w.document.write("Behandlung: "+p.behandlung+"<br>");
-w.print();
-}
+// PDF
+function pdfPatient(id){let data=JSON.parse(localStorage.getItem("patients")); let p=data.find(x=>x.id===id); let w=window.open(); w.document.write("<html><head><title>Krankenschein</title><style>body{font-family:Segoe UI;padding:20px;}h2{color:#1e3d59;}table{border-collapse:collapse;width:100%;}td,th{border:1px solid #ccc;padding:10px;text-align:left;}th{background:#1e3d59;color:white;}</style></head><body>"); w.document.write("<h2>Krankenschein – Prof. Dr. Kenan Privatklinik</h2>"); w.document.write("<table>"); ["Name","Alter","Termin","Symptome","Diagnose","Behandlung","Status","Erstellt von","Datum"].forEach((t,i)=>{let val=[p.name,p.alter,p.termin,p.symptome,p.diagnose,p.behandlung,p.status,p.erstelltVon,new Date().toLocaleDateString()][i]; w.document.write("<tr><th>"+t+"</th><td>"+val+"</td></tr>");}); w.document.write("</table></body></html>"); w.print(); w.close();}
 
+// Dark Mode
+function toggleMode(){document.body.classList.toggle("dark"); popup.classList.toggle("dark");}
+
+// Kalender
+let calendar;
+function renderCalendar(){
+let events=(JSON.parse(localStorage.getItem("patients"))||[]).map(p=>({id:p.id,title:p.name,status:p.status,start:p.termin}));
+let calendarEl=document.getElementById('calendar');
+if(calendar) calendar.destroy();
+calendar=new FullCalendar.Calendar(calendarEl,{initialView:'dayGridMonth',editable:true,eventDrop:function(info){let data=JSON.parse(localStorage.getItem("patients")); let p=data.find(x=>x.id==info.event.id); p.termin=info.event.start.toISOString().slice(0,16); localStorage.setItem("patients",JSON.stringify(data)); loadPatients(); updateStats(); log("Termin verschoben: "+p.name);},eventClick:function(info){openPopup(info.event.id);},events:events}); calendar.render();}
 </script>
+
 </body>
 </html>
+
