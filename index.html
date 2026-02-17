@@ -6,7 +6,7 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
 <style>
 body{font-family:'Segoe UI',sans-serif;margin:0;background:#f0f4f8;transition:.3s;}
-.dark{background:#1e1e2f;color:white;}
+.dark{background:#1e1e2f;color:white;} 
 header{background:#1e3d59;color:white;padding:20px;text-align:center;font-size:24px;letter-spacing:1px;}
 .container{max-width:1200px;margin:auto;padding:20px;}
 .card{background:white;padding:20px;margin-bottom:20px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.15);}
@@ -36,6 +36,7 @@ th{background:#1e3d59;color:white;}
 
 <div class="container">
 
+<!-- Login -->
 <div id="loginBox" class="card">
 <h3>Login</h3>
 <input id="username" placeholder="Benutzer">
@@ -43,6 +44,7 @@ th{background:#1e3d59;color:white;}
 <button onclick="login()">Einloggen</button>
 </div>
 
+<!-- Hauptbereich -->
 <div id="main" class="hidden">
 
 <div class="card">
@@ -100,6 +102,7 @@ th{background:#1e3d59;color:white;}
 <ul id="logList"></ul>
 </div>
 
+<!-- Kalendercard -->
 <div class="card">
 <h3>Kalender (Drag & Drop Termine)</h3>
 <div id="calendar"></div>
@@ -114,7 +117,7 @@ th{background:#1e3d59;color:white;}
 <input id="ppalter" type="number" placeholder="Alter">
 <input id="pptermin" type="datetime-local" placeholder="Termin">
 <textarea id="ppsymptome" placeholder="Symptome"></textarea>
-<input id="ppdiagnose" placeholder="Diagnose">
+<input id="ppdiagnose" placeholder="Diagnose"></input>
 <textarea id="ppbehandlung" placeholder="Behandlung"></textarea>
 <select id="ppstatus">
 <option value="offen">Status: offen</option>
@@ -130,6 +133,7 @@ th{background:#1e3d59;color:white;}
 <script>
 // Globals
 let currentUser=null; let role=null; let editId=null;
+let calendar;
 
 // Hash
 async function hash(text){const buffer=new TextEncoder().encode(text); const hashBuffer=await crypto.subtle.digest('SHA-256',buffer); return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');}
@@ -181,15 +185,44 @@ function pdfPatient(id){let data=JSON.parse(localStorage.getItem("patients")); l
 // Dark Mode
 function toggleMode(){document.body.classList.toggle("dark"); popup.classList.toggle("dark");}
 
-// Kalender
-let calendar;
+// Kalender rendern
 function renderCalendar(){
-let events=(JSON.parse(localStorage.getItem("patients"))||[]).map(p=>({id:p.id,title:p.name,status:p.status,start:p.termin}));
-let calendarEl=document.getElementById('calendar');
-if(calendar) calendar.destroy();
-calendar=new FullCalendar.Calendar(calendarEl,{initialView:'dayGridMonth',editable:true,eventDrop:function(info){let data=JSON.parse(localStorage.getItem("patients")); let p=data.find(x=>x.id==info.event.id); p.termin=info.event.start.toISOString().slice(0,16); localStorage.setItem("patients",JSON.stringify(data)); loadPatients(); updateStats(); log("Termin verschoben: "+p.name);},eventClick:function(info){openPopup(info.event.id);},events:events}); calendar.render();}
+    let events=(JSON.parse(localStorage.getItem("patients"))||[]).map(p=>({id:p.id,title:p.name,start:p.termin}));
+    let calendarEl=document.getElementById('calendar');
+    if(calendar) calendar.destroy();
+    calendar=new FullCalendar.Calendar(calendarEl,{
+        initialView:'dayGridMonth',
+        editable:true,
+        selectable:true,
+        headerToolbar:{
+            left:'prev,next today',
+            center:'title',
+            right:'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events:events,
+        eventClick:function(info){openPopup(info.event.id);},
+        eventDrop:function(info){
+            let data=JSON.parse(localStorage.getItem("patients"));
+            let p=data.find(x=>x.id==info.event.id);
+            p.termin=info.event.start.toISOString().slice(0,16);
+            localStorage.setItem("patients",JSON.stringify(data));
+            loadPatients();
+            updateStats();
+            log("Termin verschoben: "+p.name);
+        }
+    });
+    calendar.render();
+}
+
+// Demo Patienten
+if(!localStorage.getItem("patients")){
+    localStorage.setItem("patients",JSON.stringify([
+        {id:1,name:"Max",termin:"2026-02-18T09:00:00",symptome:"Husten",diagnose:"Grippe",behandlung:"Medikamente",status:"offen",erstelltVon:"Admin"},
+        {id:2,name:"Lisa",termin:"2026-02-18T11:00:00",symptome:"Kopfweh",diagnose:"Migraine",behandlung:"Tabletten",status:"erledigt",erstelltVon:"Admin"}
+    ]));
+}
+
 </script>
 
 </body>
 </html>
-
