@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Digitale Klinik – Prof. Dr. Kenan & Pat</title>
+<style>
+/* Grundlayout */
+body {
+    font-family: Arial, sans-serif;
+    margin:0;
+    background: #f4f9ff;
+    transition: background 0.5s;
+}
+
+header {
+    background: #0a3d62;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+.container {
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+button {
+    padding: 10px;
+    border: none;
+    background: #1e90ff;
+    color: white;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+button:hover {
+    background: #0c7cd5;
+}
+
+.danger {
+    background: red;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Dark Mode */
+body.dark {
+    background: #1e1e1e;
+    color: #ddd;
+}
+
+body.dark .card {
+    background: #2c2c2c;
+    color: #ddd;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🏥 Digitale Klinik</h1>
+<p>Prof. Dr. Kenan & Pat</p>
+</header>
+
+<div class="container">
+
+<!-- LOGIN -->
+<div class="card" id="loginBox">
+<h2>Login</h2>
+<input type="text" id="username" placeholder="Benutzername">
+<input type="password" id="password" placeholder="Passwort">
+<button onclick="login()">Einloggen</button>
+</div>
+
+<!-- HAUPTINHALT -->
+<div id="mainContent" class="hidden">
+
+<div class="card">
+<h2>🌗 Dark Mode</h2>
+<button onclick="toggleDark()">Dark / Light Mode wechseln</button>
+</div>
+
+<div class="card">
+<h2>🚨 Notfallmodus</h2>
+<button class="danger" onclick="notfall()">NOTFALL AKTIVIEREN</button>
+</div>
+
+<div class="card">
+<h2>🩺 Neuer Patient</h2>
+<input type="text" id="name" placeholder="Name">
+<input type="number" id="alter" placeholder="Alter">
+<textarea id="symptome" placeholder="Symptome"></textarea>
+<input type="text" id="diagnose" placeholder="Diagnose">
+<textarea id="behandlung" placeholder="Behandlung"></textarea>
+<button onclick="addPatient()">Speichern</button>
+</div>
+
+<div class="card">
+<h2>📋 Patientenliste</h2>
+<ul id="liste"></ul>
+</div>
+
+<div class="card">
+<h2>📅 Terminplaner</h2>
+<input type="date" id="datum">
+<input type="time" id="zeit">
+<input type="text" id="terminPatient" placeholder="Patient Name">
+<button onclick="addTermin()">Termin speichern</button>
+<ul id="termine"></ul>
+</div>
+
+<div class="card">
+<h2>💊 Rezept Generator</h2>
+<input type="text" id="medikament" placeholder="Medikament">
+<input type="text" id="dosierung" placeholder="Dosierung">
+<button onclick="rezept()">Rezept erstellen</button>
+<p id="rezeptOutput"></p>
+</div>
+
+<div class="card">
+<h2>🧾 Krankenschein</h2>
+<button onclick="window.print()">Krankenschein drucken</button>
+</div>
+
+</div>
+</div>
+
+<audio id="alarmSound">
+  <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
+</audio>
+
+<script>
+// LOGIN SYSTEM
+function login() {
+    let user = document.getElementById("username").value.toLowerCase();
+    let pass = document.getElementById("password").value;
+
+    if ((user === "kenan" && pass === "1234") || (user === "pat" && pass === "1234")) {
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("mainContent").classList.remove("hidden");
+        loadPatients();
+        loadTermine();
+    } else alert("Falsche Daten!");
+}
+
+// DARK MODE
+function toggleDark() {
+    document.body.classList.toggle("dark");
+}
+
+// NOTFALL
+function notfall() {
+    alert("🚨 NOTFALL! Sofort behandeln!");
+    document.body.style.background = "#ffcccc";
+    document.getElementById("alarmSound").play();
+}
+
+// PATIENTEN SYSTEM
+function addPatient() {
+    let name = document.getElementById("name").value;
+    let alter = document.getElementById("alter").value;
+    let symptome = document.getElementById("symptome").value;
+    let diagnose = document.getElementById("diagnose").value;
+    let behandlung = document.getElementById("behandlung").value;
+    let id = Date.now(); // Patienten-ID
+
+    let patient = {id, name, alter, symptome, diagnose, behandlung};
+
+    let patients = JSON.parse(localStorage.getItem("patients")) || [];
+    patients.push(patient);
+    localStorage.setItem("patients", JSON.stringify(patients));
+
+    loadPatients();
+}
+
+function loadPatients() {
+    let liste = document.getElementById("liste");
+    liste.innerHTML = "";
+    let patients = JSON.parse(localStorage.getItem("patients")) || [];
+
+    patients.forEach(p => {
+        let li = document.createElement("li");
+        li.innerHTML =
+        "<strong>ID:"+p.id+"</strong> " + p.name + " (" + p.alter + " Jahre)<br>" +
+        "Symptome: " + p.symptome + "<br>" +
+        "Diagnose: " + p.diagnose + "<br>" +
+        "Behandlung: " + p.behandlung +
+        "<br><button onclick='deletePatient("+p.id+")'>Löschen</button><hr>";
+        liste.appendChild(li);
+    });
+}
+
+function deletePatient(id) {
+    let patients = JSON.parse(localStorage.getItem("patients")) || [];
+    patients = patients.filter(p => p.id !== id);
+    localStorage.setItem("patients", JSON.stringify(patients));
+    loadPatients();
+}
+
+// REZEPT GENERATOR
+function rezept() {
+    let med = document.getElementById("medikament").value;
+    let dos = document.getElementById("dosierung").value;
+    document.getElementById("rezeptOutput").innerHTML =
+        "💊 Verschrieben: " + med + " – Dosierung: " + dos +
+        "<br>Unterschrift: Prof. Dr. Kenan";
+}
+
+// TERMINPLANER
+function addTermin() {
+    let datum = document.getElementById("datum").value;
+    let zeit = document.getElementById("zeit").value;
+    let patient = document.getElementById("terminPatient").value;
+
+    let termine = JSON.parse(localStorage.getItem("termine")) || [];
+    termine.push({datum, zeit, patient});
+    localStorage.setItem("termine", JSON.stringify(termine));
+
+    loadTermine();
+}
+
+function loadTermine() {
+    let list = document.getElementById("termine");
+    list.innerHTML = "";
+    let termine = JSON.parse(localStorage.getItem("termine")) || [];
+    termine.forEach(t => {
+        let li = document.createElement("li");
+        li.innerHTML = t.datum + " " + t.zeit + " – " + t.patient;
+        list.appendChild(li);
+    });
+}
+</script>
+</body>
+</html>
