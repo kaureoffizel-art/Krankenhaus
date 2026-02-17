@@ -102,7 +102,7 @@ th{background:#1e3d59;color:white;}
 <ul id="logList"></ul>
 </div>
 
-<!-- Kalendercard -->
+<!-- Hier ist der KALENDER -->
 <div class="card">
 <h3>Kalender (Drag & Drop Termine)</h3>
 <div id="calendar"></div>
@@ -185,7 +185,7 @@ function pdfPatient(id){let data=JSON.parse(localStorage.getItem("patients")); l
 // Dark Mode
 function toggleMode(){document.body.classList.toggle("dark"); popup.classList.toggle("dark");}
 
-// Kalender rendern
+// === KALENDER ===
 function renderCalendar(){
     let events=(JSON.parse(localStorage.getItem("patients"))||[]).map(p=>({id:p.id,title:p.name,start:p.termin}));
     let calendarEl=document.getElementById('calendar');
