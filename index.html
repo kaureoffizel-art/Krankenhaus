@@ -26,6 +26,7 @@ th{background:#1e3d59;color:white;}
 
 <header>
 🏥 Prof. Dr. Kenan Privatklinik
+<button style="float:right;margin-right:20px;" onclick="logout()">Logout</button>
 </header>
 
 <div class="container">
@@ -95,17 +96,33 @@ th{background:#1e3d59;color:white;}
 
 </div>
 
+<!-- Popup zum Bearbeiten -->
+<div id="popup" class="card" style="display:none;position:fixed;top:20%;left:50%;transform:translateX(-50%);z-index:1000;background:white;padding:20px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.3);width:300px;">
+<h3>Patient bearbeiten</h3>
+<input id="epname" placeholder="Name">
+<input id="epalter" type="number" placeholder="Alter">
+<input id="epdate" type="date" placeholder="Geburtsdatum">
+<input id="eptermin" type="datetime-local" placeholder="Termin">
+<textarea id="epsymptome" placeholder="Symptome"></textarea>
+<select id="epstatus">
+<option value="1">Dringlichkeit 1 (höchste)</option>
+<option value="2">Dringlichkeit 2</option>
+<option value="3">Dringlichkeit 3</option>
+<option value="4">Dringlichkeit 4 (niedrig)</option>
+</select>
+<button onclick="saveEdit()">Speichern</button>
+<button onclick="closePopup()" class="danger">Abbrechen</button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
-// ====== Daten ======
-let users = [
-  {username:"admin",password:"admin",role:"admin",fixed:true}
-];
+let users = [{username:"admin",password:"admin",role:"admin",fixed:true}];
 let patients = [];
 let currentUser = null;
+let editIndex = null;
 
-// ====== Login ======
+// ===== Login =====
 function login(){
   let u=document.getElementById("username").value;
   let p=document.getElementById("password").value;
@@ -122,15 +139,21 @@ function login(){
   } else alert("Login falsch!");
 }
 
-// ====== Patientenverwaltung ======
+// ===== Logout =====
+function logout(){
+  currentUser=null;
+  document.getElementById("main").style.display="none";
+  document.getElementById("loginBox").style.display="block";
+}
+
+// ===== Patientenverwaltung =====
 function addPatient(){
   let p={name:document.getElementById("pname").value,
          alter:document.getElementById("palter").value,
          gebdatum:document.getElementById("pdate").value,
          termin:document.getElementById("ptermin").value,
          symptome:document.getElementById("psymptome").value,
-         status:document.getElementById("pstatus").value
-        };
+         status:document.getElementById("pstatus").value};
   patients.push(p);
   renderPatients();
   updateStats();
@@ -146,23 +169,48 @@ function renderPatients(){
   let s=document.getElementById("search").value.toLowerCase();
   let tbody=document.getElementById("patientTable");
   tbody.innerHTML="";
-  patients.filter(p=>p.name.toLowerCase().includes(s)).forEach(p=>{
-    let tr=document.createElement("tr");
-    tr.innerHTML=`<td>${p.name}</td><td>${p.alter}</td><td>${p.gebdatum}</td><td>${p.termin}</td><td>${p.symptome}</td><td class="status-${p.status}">${p.status}</td><td><button onclick="deletePatient('${p.name}')">Löschen</button><button onclick="exportPDF('${p.name}')">PDF</button></td>`;
-    tbody.appendChild(tr);
+  patients.forEach((p,idx)=>{
+    if(p.name.toLowerCase().includes(s)){
+      let tr=document.createElement("tr");
+      tr.innerHTML=`<td>${p.name}</td><td>${p.alter}</td><td>${p.gebdatum}</td><td>${p.termin}</td><td>${p.symptome}</td><td class="status-${p.status}">${p.status}</td>
+      <td><button onclick="editPatient(${idx})">Bearbeiten</button>
+          <button onclick="deletePatient(${idx})">Löschen</button>
+          <button onclick="exportPDF(${idx})">PDF</button>
+      </td>`;
+      tbody.appendChild(tr);
+    }
   });
 }
-function deletePatient(name){
-  patients=patients.filter(p=>p.name!==name);
+function editPatient(idx){
+  editIndex=idx;
+  let p=patients[idx];
+  document.getElementById("epname").value=p.name;
+  document.getElementById("epalter").value=p.alter;
+  document.getElementById("epdate").value=p.gebdatum;
+  document.getElementById("eptermin").value=p.termin;
+  document.getElementById("epsymptome").value=p.symptome;
+  document.getElementById("epstatus").value=p.status;
+  document.getElementById("popup").style.display="block";
+}
+function saveEdit(){
+  if(editIndex===null) return;
+  let p=patients[editIndex];
+  p.name=document.getElementById("epname").value;
+  p.alter=document.getElementById("epalter").value;
+  p.gebdatum=document.getElementById("epdate").value;
+  p.termin=document.getElementById("eptermin").value;
+  p.symptome=document.getElementById("epsymptome").value;
+  p.status=document.getElementById("epstatus").value;
+  document.getElementById("popup").style.display="none";
+  editIndex=null;
   renderPatients();
-  updateStats();
   renderCalendar();
 }
-function updateStats(){
-  document.getElementById("stats").innerText="Gesamt Patienten: "+patients.length;
-}
+function closePopup(){document.getElementById("popup").style.display="none"; editIndex=null;}
+function deletePatient(idx){patients.splice(idx,1); renderPatients(); renderCalendar(); updateStats();}
+function updateStats(){document.getElementById("stats").innerText="Gesamt Patienten: "+patients.length;}
 
-// ====== Admin ======
+// ===== Admin =====
 function createUser(){
   if(currentUser.role!=="admin"){alert("Zugriff verweigert"); return;}
   let u=document.getElementById("newUser").value;
@@ -181,7 +229,7 @@ function renderUsers(){
     if(!u.fixed){
       let btn=document.createElement("button");
       btn.textContent="Löschen";
-      btn.onclick=()=>{deleteUser(idx)};
+      btn.onclick=()=>{users.splice(idx,1); renderUsers();};
       tr.appendChild(document.createElement("td")).appendChild(btn);
     } else {
       tr.appendChild(document.createElement("td")).innerText="Fest";
@@ -189,16 +237,10 @@ function renderUsers(){
     table.appendChild(tr);
   });
 }
-function deleteUser(idx){
-  if(users[idx].fixed){alert("Admin kann nicht gelöscht werden!"); return;}
-  users.splice(idx,1);
-  renderUsers();
-}
 
-// ====== PDF Export ======
-function exportPDF(name){
-  let p=patients.find(x=>x.name===name);
-  if(!p) return;
+// ===== PDF Export =====
+function exportPDF(idx){
+  let p=patients[idx];
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.setFontSize(16);
@@ -213,7 +255,7 @@ function exportPDF(name){
   doc.save(`${p.name}_akte.pdf`);
 }
 
-// ====== Kalender ======
+// ===== Kalender =====
 let calendar;
 function renderCalendar(){
   let events=patients
@@ -221,14 +263,10 @@ function renderCalendar(){
     .map(p=>({title:p.name+' (Dring '+p.status+')',start:p.termin}));
   let calendarEl=document.getElementById('calendar');
   if(calendar) calendar.destroy();
-  calendar=new FullCalendar.Calendar(calendarEl,{
-    initialView:'dayGridMonth',
-    events:events
-  });
+  calendar=new FullCalendar.Calendar(calendarEl,{initialView:'dayGridMonth',events:events});
   calendar.render();
 }
 </script>
 
 </body>
 </html>
-
