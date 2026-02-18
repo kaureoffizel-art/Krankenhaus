@@ -5,37 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prof. Dr. Kenan Privatklinik</title>
 <style>
-/* ====== Grundlayout ====== */
 body{margin:0;font-family:'Segoe UI',sans-serif;background:#f4f8fb;}
 header{background:#0b3d91;color:white;padding:20px;text-align:center;font-size:24px;}
 .container{display:flex;min-height:calc(100vh - 70px);}
-
-/* ====== Sidebar ====== */
 .sidebar{width:240px;background:#1455c3;color:white;padding:20px;}
 .sidebar h2{text-align:center;}
 .sidebar a{display:block;color:white;text-decoration:none;padding:10px;margin:8px 0;border-radius:6px;background:#1e67c1;}
 .sidebar a:hover{background:#0b3d91;}
-
-/* ====== Main Content ====== */
 .main{flex:1;padding:20px;}
-
-/* ====== Karten / Panels ====== */
 .card{background:white;padding:20px;margin-bottom:20px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.08);}
-
-/* ====== Tabellen ====== */
 table{width:100%;border-collapse:collapse;}
 table th,table td{border:1px solid #ddd;padding:10px;text-align:left;}
 th{background:#e3ecff;}
-
-/* ====== Buttons ====== */
 button{padding:10px 16px;border:none;border-radius:6px;cursor:pointer;background:#0b3d91;color:white;margin-right:5px;}
 button:hover{opacity:0.9;}
 button.red{background:red;font-weight:bold;font-size:16px;}
-
-/* ====== Formulare ====== */
 input,select,textarea{width:100%;padding:10px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc;}
-
-/* ====== Kalender Raster ====== */
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center;}
 .calendar div{background:#e3ecff;padding:15px;border-radius:6px;}
 </style>
@@ -51,6 +36,7 @@ input,select,textarea{width:100%;padding:10px;margin-bottom:10px;border-radius:6
     <a href="#" onclick="showSection('patients')">Patienten</a>
     <a href="#" onclick="showSection('calendar')">Kalender</a>
     <a href="#" onclick="showSection('admin')">Admin</a>
+    <a href="#" onclick="logout()">Logout</a>
   </div>
 
   <div class="main">
@@ -149,18 +135,37 @@ function login(){
     renderCalendar();
   }else{
     alert("Login falsch");
+    currentUser=null;
+    hideAllSections();
   }
 }
 
-// ====== Navigation ======
+// ====== Logout ======
+function logout(){
+  currentUser=null;
+  hideAllSections();
+  document.getElementById("loginSection").style.display="block";
+}
+
+// ====== Zeige nur erlaubte Sections ======
 function showSection(id){
+  if(!currentUser){alert("Bitte einloggen"); return;}
+  if(id==="admin" && currentUser.role!=="admin"){alert("Zugriff verweigert"); return;}
   ["dashboard","patients","calendar","admin"].forEach(s=>{
     document.getElementById(s).style.display = (s===id) ? "block":"none";
   });
 }
 
+// ====== Alle Sections ausblenden ======
+function hideAllSections(){
+  ["dashboard","patients","calendar","admin"].forEach(s=>{
+    document.getElementById(s).style.display="none";
+  });
+}
+
 // ====== Patienten ======
 function addPatient(){
+  if(!currentUser || (currentUser.role!=="admin" && currentUser.role!=="doctor" && currentUser.role!=="reception")){alert("Zugriff verweigert"); return;}
   let patient = {
     name:document.getElementById("pName").value,
     dob:document.getElementById("pDOB").value,
@@ -176,6 +181,7 @@ function addPatient(){
 }
 
 function emergencyPatient(){
+  if(!currentUser){alert("Zugriff verweigert"); return;}
   if(patients.length>0){
     patients[patients.length-1].urgency = "1";
     patients[patients.length-1].status = "Schnell Behandeln";
@@ -185,6 +191,7 @@ function emergencyPatient(){
 }
 
 function renderPatients(){
+  if(!currentUser){return;}
   let table = document.getElementById("patientTable");
   let search = document.getElementById("searchPatient").value.toLowerCase();
   table.innerHTML="";
@@ -197,6 +204,7 @@ function renderPatients(){
 
 // ====== Admin ======
 function createUser(){
+  if(!currentUser || currentUser.role!=="admin"){alert("Zugriff verweigert"); return;}
   let u = document.getElementById("newUser").value;
   let p = document.getElementById("newPass").value;
   let r = document.getElementById("newRole").value;
@@ -205,6 +213,7 @@ function createUser(){
 }
 
 function renderUsers(){
+  if(!currentUser || currentUser.role!=="admin"){return;}
   let table = document.getElementById("userTable");
   table.innerHTML="";
   users.forEach(u=>{
@@ -216,6 +225,7 @@ function renderUsers(){
 
 // ====== Kalender (einfach Raster) ======
 function renderCalendar(){
+  if(!currentUser){return;}
   let grid = document.getElementById("calendarGrid");
   grid.innerHTML="";
   for(let i=1;i<=30;i++){
@@ -224,7 +234,6 @@ function renderCalendar(){
     grid.appendChild(d);
   }
 }
-
 </script>
 
 </body>
