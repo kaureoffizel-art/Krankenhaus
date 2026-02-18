@@ -2,239 +2,233 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prof. Dr. Kenan Privatklinik</title>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
 <style>
-body{margin:0;font-family:'Segoe UI',sans-serif;background:#f4f8fb;}
-header{background:#0b3d91;color:white;padding:20px;text-align:center;font-size:24px;}
-.container{display:flex;min-height:calc(100vh - 70px);}
-.sidebar{width:240px;background:#1455c3;color:white;padding:20px;}
-.sidebar h2{text-align:center;}
-.sidebar a{display:block;color:white;text-decoration:none;padding:10px;margin:8px 0;border-radius:6px;background:#1e67c1;}
-.sidebar a:hover{background:#0b3d91;}
-.main{flex:1;padding:20px;}
-.card{background:white;padding:20px;margin-bottom:20px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.08);}
+body{font-family:'Segoe UI',sans-serif;margin:0;background:#f0f4f8;}
+header{background:#1e3d59;color:white;padding:20px;text-align:center;font-size:24px;}
+.container{padding:20px;}
+.card{background:white;padding:20px;margin-bottom:20px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.1);}
+input,select,textarea{width:100%;padding:8px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc;}
+button{padding:10px 16px;border:none;border-radius:6px;cursor:pointer;background:#3498db;color:white;margin-right:5px;}
+button.danger{background:#e74c3c;}
 table{width:100%;border-collapse:collapse;}
-table th,table td{border:1px solid #ddd;padding:10px;text-align:left;}
-th{background:#e3ecff;}
-button{padding:10px 16px;border:none;border-radius:6px;cursor:pointer;background:#0b3d91;color:white;margin-right:5px;}
-button:hover{opacity:0.9;}
-button.red{background:red;font-weight:bold;font-size:16px;}
-input,select,textarea{width:100%;padding:10px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc;}
-.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center;}
-.calendar div{background:#e3ecff;padding:15px;border-radius:6px;}
+th,td{border:1px solid #ddd;padding:8px;text-align:left;}
+th{background:#1e3d59;color:white;}
+.status-1{color:red;font-weight:bold;}
+.status-2{color:orange;font-weight:bold;}
+.status-3{color:goldenrod;font-weight:bold;}
+.status-4{color:green;font-weight:bold;}
+#calendar{max-width:900px;margin:auto;}
 </style>
 </head>
 <body>
 
-<header>🏥 Prof. Dr. Kenan Privatklinik</header>
+<header>
+🏥 Prof. Dr. Kenan Privatklinik
+</header>
 
 <div class="container">
-  <div class="sidebar">
-    <h2>Navigation</h2>
-    <a href="#" onclick="showSection('dashboard')">Dashboard</a>
-    <a href="#" onclick="showSection('patients')">Patienten</a>
-    <a href="#" onclick="showSection('calendar')">Kalender</a>
-    <a href="#" onclick="showSection('admin')">Admin</a>
-    <a href="#" onclick="logout()">Logout</a>
-  </div>
 
-  <div class="main">
-    <!-- Login -->
-    <div id="loginSection" class="card">
-      <h2>Login</h2>
-      <input id="loginUser" placeholder="Benutzername">
-      <input id="loginPass" type="password" placeholder="Passwort">
-      <button onclick="login()">Einloggen</button>
-    </div>
-
-    <!-- Dashboard -->
-    <div id="dashboard" class="card" style="display:none;">
-      <h2>Dashboard</h2>
-      <p id="totalPatients">Gesamt Patienten: 0</p>
-      <p id="emergencies">Notfälle: 0</p>
-      <p id="todayAppointments">Termine heute: 0</p>
-    </div>
-
-    <!-- Patientenverwaltung -->
-    <div id="patients" class="card" style="display:none;">
-      <h2>Patientenverwaltung</h2>
-      <h3>Neuen Patienten hinzufügen</h3>
-      <input id="pName" placeholder="Name">
-      <input id="pDOB" type="date">
-      <input id="pAddress" placeholder="Adresse">
-      <input id="pPhone" placeholder="Telefon">
-      <input id="pInsurance" placeholder="Versicherungsnummer">
-      <label>Dringlichkeit:</label>
-      <select id="pUrgency">
-        <option value="1">1 - Kritisch</option>
-        <option value="2">2 - Hoch</option>
-        <option value="3">3 - Mittel</option>
-        <option value="4">4 - Niedrig</option>
-      </select>
-      <button onclick="addPatient()">Patient speichern</button>
-      <button class="red" onclick="emergencyPatient()">SCHNELL BEHANDELN</button>
-
-      <h3>Patientenliste</h3>
-      <input id="searchPatient" placeholder="Suchen..." onkeyup="renderPatients()">
-      <table>
-        <thead>
-          <tr><th>Name</th><th>Geburtsdatum</th><th>Status</th><th>Dringlichkeit</th></tr>
-        </thead>
-        <tbody id="patientTable"></tbody>
-      </table>
-    </div>
-
-    <!-- Kalender -->
-    <div id="calendar" class="card" style="display:none;">
-      <h2>Kalender</h2>
-      <div class="calendar" id="calendarGrid"></div>
-    </div>
-
-    <!-- Admin -->
-    <div id="admin" class="card" style="display:none;">
-      <h2>Admin Panel</h2>
-      <input id="newUser" placeholder="Benutzername">
-      <input id="newPass" placeholder="Passwort">
-      <select id="newRole">
-        <option value="admin">Admin</option>
-        <option value="doctor">Arzt</option>
-        <option value="reception">Empfang</option>
-      </select>
-      <button onclick="createUser()">Benutzer erstellen</button>
-      <h3>Benutzerliste</h3>
-      <table>
-        <thead>
-          <tr><th>Benutzer</th><th>Rolle</th></tr>
-        </thead>
-        <tbody id="userTable"></tbody>
-      </table>
-    </div>
-
-  </div>
+<div id="loginBox" class="card">
+<h3>Login</h3>
+<input id="username" placeholder="Benutzer">
+<input id="password" type="password" placeholder="Passwort">
+<button onclick="login()">Einloggen</button>
 </div>
 
+<div id="main" style="display:none;">
+
+<div class="card">
+<h3>Dashboard</h3>
+<div id="stats"></div>
+</div>
+
+<div class="card">
+<h3>Patientenverwaltung</h3>
+<input id="pname" placeholder="Name">
+<input id="palter" type="number" placeholder="Alter">
+<input id="pdate" type="date" placeholder="Geburtsdatum">
+<input id="ptermin" type="datetime-local" placeholder="Termin">
+<textarea id="psymptome" placeholder="Symptome"></textarea>
+<select id="pstatus">
+<option value="1">Dringlichkeit 1 (höchste)</option>
+<option value="2">Dringlichkeit 2</option>
+<option value="3">Dringlichkeit 3</option>
+<option value="4">Dringlichkeit 4 (niedrig)</option>
+</select>
+<button onclick="addPatient()">Patient hinzufügen</button>
+<button onclick="emergencyPatient()">SCHNELL BEHANDELN</button>
+</div>
+
+<div class="card">
+<h3>Patientenliste</h3>
+<input id="search" placeholder="Suche..." oninput="renderPatients()">
+<table>
+<thead>
+<tr><th>Name</th><th>Alter</th><th>Geburtsdatum</th><th>Termin</th><th>Symptome</th><th>Dringlichkeit</th><th>Aktion</th></tr>
+</thead>
+<tbody id="patientTable"></tbody>
+</table>
+</div>
+
+<div class="card" id="adminPanel" style="display:none;">
+<h3>Admin Panel – Benutzerverwaltung</h3>
+<input id="newUser" placeholder="Benutzername">
+<input id="newPass" placeholder="Passwort">
+<select id="newRole">
+<option value="admin">Admin</option>
+<option value="doctor">Arzt</option>
+<option value="reception">Empfang</option>
+</select>
+<button onclick="createUser()">Benutzer erstellen</button>
+<table>
+<thead><tr><th>Benutzer</th><th>Rolle</th><th>Löschen</th></tr></thead>
+<tbody id="userTable"></tbody>
+</table>
+</div>
+
+<div class="card">
+<h3>Kalender</h3>
+<div id="calendar"></div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 // ====== Daten ======
-let users = [{username:"admin",password:"admin",role:"admin"}];
-let currentUser = null;
+let users = [
+  {username:"admin",password:"admin",role:"admin",fixed:true}
+];
 let patients = [];
+let currentUser = null;
 
 // ====== Login ======
 function login(){
-  let u = document.getElementById("loginUser").value;
-  let p = document.getElementById("loginPass").value;
-  let user = users.find(x=>x.username===u && x.password===p);
+  let u=document.getElementById("username").value;
+  let p=document.getElementById("password").value;
+  let user=users.find(x=>x.username===u && x.password===p);
   if(user){
-    currentUser = user;
-    alert("Erfolgreich eingeloggt als "+user.role);
-    document.getElementById("loginSection").style.display="none";
-    showSection("dashboard");
+    currentUser=user;
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("main").style.display="block";
+    if(user.role==="admin") document.getElementById("adminPanel").style.display="block";
     renderUsers();
     renderPatients();
+    updateStats();
     renderCalendar();
-  }else{
-    alert("Login falsch");
-    currentUser=null;
-    hideAllSections();
-  }
+  } else alert("Login falsch!");
 }
 
-// ====== Logout ======
-function logout(){
-  currentUser=null;
-  hideAllSections();
-  document.getElementById("loginSection").style.display="block";
-}
-
-// ====== Zeige nur erlaubte Sections ======
-function showSection(id){
-  if(!currentUser){alert("Bitte einloggen"); return;}
-  if(id==="admin" && currentUser.role!=="admin"){alert("Zugriff verweigert"); return;}
-  ["dashboard","patients","calendar","admin"].forEach(s=>{
-    document.getElementById(s).style.display = (s===id) ? "block":"none";
-  });
-}
-
-// ====== Alle Sections ausblenden ======
-function hideAllSections(){
-  ["dashboard","patients","calendar","admin"].forEach(s=>{
-    document.getElementById(s).style.display="none";
-  });
-}
-
-// ====== Patienten ======
+// ====== Patientenverwaltung ======
 function addPatient(){
-  if(!currentUser || (currentUser.role!=="admin" && currentUser.role!=="doctor" && currentUser.role!=="reception")){alert("Zugriff verweigert"); return;}
-  let patient = {
-    name:document.getElementById("pName").value,
-    dob:document.getElementById("pDOB").value,
-    address:document.getElementById("pAddress").value,
-    phone:document.getElementById("pPhone").value,
-    insurance:document.getElementById("pInsurance").value,
-    urgency:document.getElementById("pUrgency").value,
-    status:"Wartend"
-  };
-  patients.push(patient);
+  let p={name:document.getElementById("pname").value,
+         alter:document.getElementById("palter").value,
+         gebdatum:document.getElementById("pdate").value,
+         termin:document.getElementById("ptermin").value,
+         symptome:document.getElementById("psymptome").value,
+         status:document.getElementById("pstatus").value
+        };
+  patients.push(p);
   renderPatients();
+  updateStats();
   renderCalendar();
 }
-
 function emergencyPatient(){
-  if(!currentUser){alert("Zugriff verweigert"); return;}
-  if(patients.length>0){
-    patients[patients.length-1].urgency = "1";
-    patients[patients.length-1].status = "Schnell Behandeln";
-    renderPatients();
-    renderCalendar();
-  }
+  let name=prompt("Name des Patienten für Schnellbehandlung:");
+  let p=patients.find(x=>x.name===name);
+  if(p){p.status="1"; renderPatients(); updateStats(); renderCalendar(); alert("Patient auf höchste Dringlichkeit gesetzt!");}
+  else alert("Patient nicht gefunden!");
 }
-
 function renderPatients(){
-  if(!currentUser){return;}
-  let table = document.getElementById("patientTable");
-  let search = document.getElementById("searchPatient").value.toLowerCase();
-  table.innerHTML="";
-  patients.filter(p=>p.name.toLowerCase().includes(search)).forEach(p=>{
-    let tr = document.createElement("tr");
-    tr.innerHTML=`<td>${p.name}</td><td>${p.dob}</td><td>${p.status}</td><td>${p.urgency}</td>`;
-    table.appendChild(tr);
+  let s=document.getElementById("search").value.toLowerCase();
+  let tbody=document.getElementById("patientTable");
+  tbody.innerHTML="";
+  patients.filter(p=>p.name.toLowerCase().includes(s)).forEach(p=>{
+    let tr=document.createElement("tr");
+    tr.innerHTML=`<td>${p.name}</td><td>${p.alter}</td><td>${p.gebdatum}</td><td>${p.termin}</td><td>${p.symptome}</td><td class="status-${p.status}">${p.status}</td><td><button onclick="deletePatient('${p.name}')">Löschen</button><button onclick="exportPDF('${p.name}')">PDF</button></td>`;
+    tbody.appendChild(tr);
   });
+}
+function deletePatient(name){
+  patients=patients.filter(p=>p.name!==name);
+  renderPatients();
+  updateStats();
+  renderCalendar();
+}
+function updateStats(){
+  document.getElementById("stats").innerText="Gesamt Patienten: "+patients.length;
 }
 
 // ====== Admin ======
 function createUser(){
-  if(!currentUser || currentUser.role!=="admin"){alert("Zugriff verweigert"); return;}
-  let u = document.getElementById("newUser").value;
-  let p = document.getElementById("newPass").value;
-  let r = document.getElementById("newRole").value;
-  users.push({username:u,password:p,role:r});
+  if(currentUser.role!=="admin"){alert("Zugriff verweigert"); return;}
+  let u=document.getElementById("newUser").value;
+  let p=document.getElementById("newPass").value;
+  let r=document.getElementById("newRole").value;
+  users.push({username:u,password:p,role:r,fixed:false});
   renderUsers();
 }
-
 function renderUsers(){
-  if(!currentUser || currentUser.role!=="admin"){return;}
-  let table = document.getElementById("userTable");
+  if(currentUser.role!=="admin") return;
+  let table=document.getElementById("userTable");
   table.innerHTML="";
-  users.forEach(u=>{
+  users.forEach((u,idx)=>{
     let tr=document.createElement("tr");
     tr.innerHTML=`<td>${u.username}</td><td>${u.role}</td>`;
+    if(!u.fixed){
+      let btn=document.createElement("button");
+      btn.textContent="Löschen";
+      btn.onclick=()=>{deleteUser(idx)};
+      tr.appendChild(document.createElement("td")).appendChild(btn);
+    } else {
+      tr.appendChild(document.createElement("td")).innerText="Fest";
+    }
     table.appendChild(tr);
   });
 }
+function deleteUser(idx){
+  if(users[idx].fixed){alert("Admin kann nicht gelöscht werden!"); return;}
+  users.splice(idx,1);
+  renderUsers();
+}
 
-// ====== Kalender (einfach Raster) ======
+// ====== PDF Export ======
+function exportPDF(name){
+  let p=patients.find(x=>x.name===name);
+  if(!p) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text("Patientenakte – Prof. Dr. Kenan Privatklinik",10,20);
+  doc.setFontSize(12);
+  doc.text(`Name: ${p.name}`,10,40);
+  doc.text(`Alter: ${p.alter}`,10,50);
+  doc.text(`Geburtsdatum: ${p.gebdatum}`,10,60);
+  doc.text(`Termin: ${p.termin}`,10,70);
+  doc.text(`Symptome: ${p.symptome}`,10,80);
+  doc.text(`Dringlichkeit: ${p.status}`,10,90);
+  doc.save(`${p.name}_akte.pdf`);
+}
+
+// ====== Kalender ======
+let calendar;
 function renderCalendar(){
-  if(!currentUser){return;}
-  let grid = document.getElementById("calendarGrid");
-  grid.innerHTML="";
-  for(let i=1;i<=30;i++){
-    let d = document.createElement("div");
-    d.innerHTML="Tag "+i;
-    grid.appendChild(d);
-  }
+  let events=patients
+    .filter(p=>p.termin)
+    .map(p=>({title:p.name+' (Dring '+p.status+')',start:p.termin}));
+  let calendarEl=document.getElementById('calendar');
+  if(calendar) calendar.destroy();
+  calendar=new FullCalendar.Calendar(calendarEl,{
+    initialView:'dayGridMonth',
+    events:events
+  });
+  calendar.render();
 }
 </script>
 
 </body>
 </html>
+
